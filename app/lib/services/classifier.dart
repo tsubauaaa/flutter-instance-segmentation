@@ -1,7 +1,7 @@
 import 'dart:io' as io;
 import 'dart:typed_data';
 
-import 'package:app/providers/recognition_provider.dart';
+import 'package:app/providers/prediction_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
@@ -10,7 +10,10 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 class Classifier {
   Classifier();
 
-  Future<RecognitionModel> classifyImage(XFile image) async {
+  Future<PredictionModel> classifyImage(XFile image) async {
+    // Pickされた画像をinputにしてその画像内の0-9を返す
+
+    // 画像をUint8Listにする
     var _file = io.File(image.path);
     img.Image? imageTemp = img.decodeImage(_file.readAsBytesSync());
     img.Image? resizedImg = img.copyResize(imageTemp!, height: 28, width: 28);
@@ -20,7 +23,11 @@ class Classifier {
     return getPrediction(imgAsList);
   }
 
-  Future<RecognitionModel> getPrediction(Uint8List imgAsList) async {
+  Future<PredictionModel> getPrediction(Uint8List imgAsList) async {
+    // Uint8Listにした画像をmodelのinputにしてpredictionを得る
+
+    // カメラ画像はRGBAなので、これをグレースケールにする。alphaを無視して、R.G.Bの平均の1チャンネルにする
+    // 28 * 28 で初期値は0.0
     final resultBytes = List.filled(28 * 28, 0.0, growable: false);
     int index = 0;
     for (int i = 0; i < imgAsList.lengthInBytes; i += 4) {
@@ -33,11 +40,14 @@ class Classifier {
       index++;
     }
 
+    // modelの入出力データを
     var input = resultBytes.reshape([1, 28, 28, 1]);
     var output = List.filled(1 * 10, 0.0, growable: false).reshape([1, 10]);
 
+    // GPUDelegate, NNAPI, parallel cores などのオプションも設定可能
     InterpreterOptions interpreterOptions = InterpreterOptions();
 
+    // 推論時間をTrackする
     int startTime = DateTime.now().millisecondsSinceEpoch;
 
     try {
@@ -61,7 +71,6 @@ class Classifier {
         digitPrediction = i;
       }
     }
-
-    return RecognitionModel(digitPrediction);
+    return PredictionModel(digitPrediction);
   }
 }
