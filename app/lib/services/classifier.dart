@@ -40,7 +40,7 @@ class Classifier {
       index++;
     }
 
-    // modelの入出力データを
+    // modelの入出力データをreshape
     var input = resultBytes.reshape([1, 28, 28, 1]);
     var output = List.filled(1 * 10, 0.0, growable: false).reshape([1, 10]);
 
