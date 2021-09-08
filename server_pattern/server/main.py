@@ -1,6 +1,8 @@
 import base64
 from io import BytesIO
 
+import cv2
+import numpy as np
 import torch
 import torchvision
 import uvicorn
@@ -8,6 +10,7 @@ from fastapi import FastAPI
 from PIL import Image
 from pydantic import BaseModel
 from starlette.responses import StreamingResponse
+from torch._C import ThroughputBenchmark
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
@@ -48,8 +51,30 @@ model.load_state_dict(
 )
 model.eval()
 
+threshold = 0.56
+
 
 app = FastAPI()
+
+
+def generate_result(prediction):
+    instances_image = Image.fromarray(
+        prediction[0]["masks"][0, 0].mul(255).byte().cpu().numpy()
+    )
+    instances_image = np.array(instances_image)
+    cnt = 0
+    for i, score in enumerate(prediction[0]["scores"].tolist()):
+        if score < threshold:
+            continue
+        next = Image.fromarray(
+            prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
+        )
+        binary_next = np.array(next.convert("L"), "f")
+        mask = (binary_next > 128) * 255
+        instances_image[mask == 255] = 255
+        cnt += 1
+
+    return instances_image, cnt
 
 
 class Data(BaseModel):
@@ -58,17 +83,17 @@ class Data(BaseModel):
 
 @app.post("/predict")
 async def index(data: Data):
-    # TODO: data.imageをmodelに合わせて加工
+    # data.imageをmodelのinputに合わせる
     decimg = base64.b64decode(data.image, validate=True)
     decimg = Image.open(BytesIO(decimg)).convert("RGB")
     input_image = torchvision.transforms.functional.to_tensor(decimg)
     prediction = model([input_image.to(device)])
 
     # TODO: アプリで表示するための画像生成
-    print(prediction)
+    output_image, num_books = generate_result(prediction)
+    _, res_image = cv2.imencode(".png", output_image)
 
-    return "ok"
-    # return StreamingResponse(BytesIO(out_image.tobytes()), media_type="image/jpeg")
+    return StreamingResponse(BytesIO(res_image.tobytes()), media_type="image/jpeg")
 
 
 if __name__ == "__main__":

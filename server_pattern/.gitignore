@@ -1,3 +1,4 @@
 __pycache__
 *.pth
-test.jpg
+*.jpg
+*.png

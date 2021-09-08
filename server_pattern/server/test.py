@@ -1,6 +1,8 @@
 import base64
+from io import BytesIO
 
 import requests
+from PIL import Image
 
 file_path = "./test.jpg"
 
@@ -16,4 +18,7 @@ res = requests.post(
     headers={"Content-Type": "application/json"},
 )
 
-print(res)
+img = Image.open(BytesIO(res.content))
+img.show(img)
+
+# img.save("output.png")
