@@ -1,10 +1,9 @@
 import base64
-from io import BytesIO
-
 import requests
+from io import BytesIO
 from PIL import Image
 
-file_path = "./test.jpg"
+file_path = "./test.png"
 
 with open(file_path, "rb") as img:
     encimg = base64.b64encode(img.read())
@@ -18,7 +17,13 @@ res = requests.post(
     headers={"Content-Type": "application/json"},
 )
 
-img = Image.open(BytesIO(res.content))
-img.show(img)
+# base64 string
+image_base64_string = res.json()["image"]
+# base64 decoding
+docoded_image_string = base64.b64decode(image_base64_string)
 
-# img.save("output.png")
+res_image = Image.open(BytesIO(docoded_image_string))
+res_image.show()
+
+# with open("output.png", "wb") as f:
+#     f.write(docoded_image_string)

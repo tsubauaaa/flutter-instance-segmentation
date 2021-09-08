@@ -3,3 +3,5 @@ torch
 torchvision
 uvicorn
 pillow
+opencv-python
+requests
