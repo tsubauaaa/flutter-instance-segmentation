@@ -93,6 +93,9 @@ async def index(data: Data):
     output_image, num_books = generate_result(prediction)
     _, res_image = cv2.imencode(".png", output_image)
 
+    encoded_image_string = base64.b64encode(BytesIO(res_image.tobytes()).read())
+    print(encoded_image_string)
+
     return StreamingResponse(BytesIO(res_image.tobytes()), media_type="image/jpeg")
 
 
