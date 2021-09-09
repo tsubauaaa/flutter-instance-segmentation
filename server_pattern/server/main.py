@@ -83,6 +83,7 @@ class InputData(BaseModel):
 
 @app.post("/predict")
 async def index(data: InputData):
+    print(f"recieved data is {data}")
     # data.imageをmodelのinputに合わせる
     decimg = base64.b64decode(data.image, validate=True)
     decimg = Image.open(BytesIO(decimg)).convert("RGB")
@@ -101,7 +102,8 @@ async def index(data: InputData):
         {
             "mime": "image/png",
             "image": encoded_image_string,
-            "number_of_books": num_books,
+            "numberOfBooks": num_books,
         }
     )
+    print(f"number of books is {num_books}")
     return JSONResponse(content=res_json)
