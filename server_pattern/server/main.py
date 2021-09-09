@@ -51,7 +51,7 @@ model.load_state_dict(
 )
 model.eval()
 
-threshold = 0.56
+threshold = 0.8
 
 
 app = FastAPI()
