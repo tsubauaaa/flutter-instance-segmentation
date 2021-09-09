@@ -5,10 +5,10 @@ import cv2
 import numpy as np
 import torch
 import torchvision
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 import uvicorn
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
@@ -97,9 +97,11 @@ async def index(data: InputData):
 
     encoded_image_string = base64.b64encode(BytesIO(res_image.tobytes()).read())
 
-    res_json = jsonable_encoder({"mime": "image/png", "image": encoded_image_string, "number_of_books": num_books})
+    res_json = jsonable_encoder(
+        {
+            "mime": "image/png",
+            "image": encoded_image_string,
+            "number_of_books": num_books,
+        }
+    )
     return JSONResponse(content=res_json)
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)

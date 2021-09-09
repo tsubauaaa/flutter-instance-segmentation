@@ -1,6 +1,7 @@
 import base64
-import requests
 from io import BytesIO
+
+import requests
 from PIL import Image
 
 file_path = "./test.png"
@@ -16,6 +17,9 @@ res = requests.post(
     json=payload,
     headers={"Content-Type": "application/json"},
 )
+
+num_books = res.json()["number_of_books"]
+print(num_books)
 
 # base64 string
 image_base64_string = res.json()["image"]
