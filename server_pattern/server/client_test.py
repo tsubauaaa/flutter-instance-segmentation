@@ -18,7 +18,7 @@ res = requests.post(
     headers={"Content-Type": "application/json"},
 )
 
-num_books = res.json()["number_of_books"]
+num_books = res.json()["numberOfBooks"]
 print(num_books)
 
 # base64 string

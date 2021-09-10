@@ -57,24 +57,17 @@ threshold = 0.8
 app = FastAPI()
 
 
-def generate_result(prediction):
-    instances_image = Image.fromarray(
-        prediction[0]["masks"][0, 0].mul(255).byte().cpu().numpy()
-    )
-    instances_image = np.array(instances_image)
-    cnt = 0
+def generate_result(prediction, input_image):
+    output_image = input_image.mul(255).permute(1, 2, 0).byte().numpy()
+    num_of_books = 0
     for i, score in enumerate(prediction[0]["scores"].tolist()):
         if score < threshold:
             continue
-        next = Image.fromarray(
-            prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
-        )
-        binary_next = np.array(next.convert("L"), "f")
-        mask = (binary_next > 128) * 255
-        instances_image[mask == 255] = 255
-        cnt += 1
+        instance_mask = prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
+        output_image[instance_mask > 0] = [0, 0, 255 - 12 * i]
+        num_of_books += 1
 
-    return instances_image, cnt
+    return output_image, num_of_books
 
 
 class InputData(BaseModel):
@@ -83,7 +76,6 @@ class InputData(BaseModel):
 
 @app.post("/predict")
 async def index(data: InputData):
-    print(f"recieved data is {data}")
     # data.imageをmodelのinputに合わせる
     decimg = base64.b64decode(data.image, validate=True)
     decimg = Image.open(BytesIO(decimg)).convert("RGB")
@@ -93,7 +85,7 @@ async def index(data: InputData):
     prediction = model([input_image.to(device)])
 
     # アプリで表示するためのresponse生成
-    output_image, num_books = generate_result(prediction)
+    output_image, num_books = generate_result(prediction, input_image)
     _, res_image = cv2.imencode(".png", output_image)
 
     encoded_image_string = base64.b64encode(BytesIO(res_image.tobytes()).read())
@@ -105,5 +97,4 @@ async def index(data: InputData):
             "numberOfBooks": num_books,
         }
     )
-    print(f"number of books is {num_books}")
     return JSONResponse(content=res_json)
