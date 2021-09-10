@@ -1,14 +1,5 @@
-import base64
-from io import BytesIO
-
-import cv2
 import torch
 import torchvision
-from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from PIL import Image
-from pydantic import BaseModel
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
@@ -49,50 +40,6 @@ model.load_state_dict(
 )
 model.eval()
 
-threshold = 0.8
 
-
-app = FastAPI()
-
-
-def generate_result(prediction, input_image):
-    output_image = input_image.mul(255).permute(1, 2, 0).byte().numpy()
-    num_of_books = 0
-    for i, score in enumerate(prediction[0]["scores"].tolist()):
-        if score < threshold:
-            continue
-        instance_mask = prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
-        output_image[instance_mask > 0] = [0, 0, 255 - 12 * i]
-        num_of_books += 1
-
-    return output_image, num_of_books
-
-
-class InputData(BaseModel):
-    image: bytes
-
-
-@app.post("/predict")
-async def index(data: InputData):
-    # data.imageをmodelのinputに合わせる
-    decimg = base64.b64decode(data.image, validate=True)
-    decimg = Image.open(BytesIO(decimg)).convert("RGB")
-    input_image = torchvision.transforms.functional.to_tensor(decimg)
-
-    # 推論
-    prediction = model([input_image.to(device)])
-
-    # アプリで表示するためのresponse生成
-    output_image, num_books = generate_result(prediction, input_image)
-    _, res_image = cv2.imencode(".png", output_image)
-
-    encoded_image_string = base64.b64encode(BytesIO(res_image.tobytes()).read())
-
-    res_json = jsonable_encoder(
-        {
-            "mime": "image/png",
-            "image": encoded_image_string,
-            "numberOfBooks": num_books,
-        }
-    )
-    return JSONResponse(content=res_json)
+script_model = torch.jit.script(model)
+script_model.save("model_instance_seg.pt")
