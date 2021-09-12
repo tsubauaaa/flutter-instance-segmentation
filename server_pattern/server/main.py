@@ -2,6 +2,7 @@ import base64
 from io import BytesIO
 
 import cv2
+from numpy import ndarray
 import torch
 import torchvision
 from fastapi import FastAPI
@@ -55,14 +56,15 @@ threshold = 0.8
 app = FastAPI()
 
 
-def generate_result(prediction, input_image):
-    output_image = input_image.mul(255).permute(1, 2, 0).byte().numpy()
+def generate_result(prediction, input_image: torch):
+    output_image: ndarray = input_image.mul(255).permute(1, 2, 0).byte().numpy()
     num_of_books = 0
     for i, score in enumerate(prediction[0]["scores"].tolist()):
         if score < threshold:
             continue
-        instance_mask = prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
-        output_image[instance_mask > 0] = [0, 0, 255 - 12 * i]
+        instance_mask: ndarray = prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
+        output_image[instance_mask > 0] = [255 - 12 * i, 0, 0]
+
         num_of_books += 1
 
     return output_image, num_of_books
@@ -84,6 +86,7 @@ async def index(data: InputData):
 
     # アプリで表示するためのresponse生成
     output_image, num_books = generate_result(prediction, input_image)
+    output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
     _, res_image = cv2.imencode(".png", output_image)
 
     encoded_image_string = base64.b64encode(BytesIO(res_image.tobytes()).read())
