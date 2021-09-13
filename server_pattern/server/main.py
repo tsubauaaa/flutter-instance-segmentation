@@ -1,13 +1,15 @@
 import base64
 from io import BytesIO
+from textwrap import fill
 
 import cv2
-from numpy import ndarray
+import numpy as np
 import torch
 import torchvision
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from numpy import ndarray
 from PIL import Image
 from pydantic import BaseModel
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
@@ -58,14 +60,24 @@ app = FastAPI()
 
 def generate_result(prediction, input_image: torch):
     output_image: ndarray = input_image.mul(255).permute(1, 2, 0).byte().numpy()
+    fill_image = np.copy(output_image)
     num_of_books = 0
+
     for i, score in enumerate(prediction[0]["scores"].tolist()):
         if score < threshold:
             continue
-        instance_mask: ndarray = prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
-        output_image[instance_mask > 0] = [255 - 12 * i, 0, 0]
 
+        instance_mask: ndarray = (
+            prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
+        )
+        fill_image[instance_mask > 0] = [255 - 12 * i, 0, 0]
         num_of_books += 1
+
+    fill_image = Image.fromarray(fill_image)
+    output_image = Image.fromarray(output_image)
+    output_image = Image.blend(output_image, fill_image, 0.4)
+
+    output_image = np.array(output_image)
 
     return output_image, num_of_books
 

@@ -29,5 +29,8 @@ docoded_image_string = base64.b64decode(image_base64_string)
 res_image = Image.open(BytesIO(docoded_image_string))
 res_image.show()
 
+input_image = Image.open(file_path)
+input_image.show()
+
 # with open("output.png", "wb") as f:
 #     f.write(docoded_image_string)
