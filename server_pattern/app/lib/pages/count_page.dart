@@ -30,9 +30,9 @@ class CountPage extends HookConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.memory(
-                        base64Decode(pickedImageStringState!),
-                      ),
+                      // Image.memory(
+                      //   base64Decode(pickedImageStringState!),
+                      // ),
                       Image.memory(
                         base64Decode(predictionResult.image!),
                       ),
