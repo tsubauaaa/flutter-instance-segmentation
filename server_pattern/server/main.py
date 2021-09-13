@@ -70,7 +70,8 @@ def generate_result(prediction, input_image: torch):
         instance_mask: ndarray = (
             prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
         )
-        fill_image[instance_mask > 0] = [255 - 12 * i, 0, 0]
+        random_color = list(np.random.choice(range(256), size=3))
+        fill_image[instance_mask > 0] = random_color
         num_of_books += 1
 
     fill_image = Image.fromarray(fill_image)
