@@ -23,8 +23,8 @@ class _MyHomePageState extends State<CountPage> {
     Tflite.close();
     try {
       String? res = await Tflite.loadModel(
-        model: "assets/tiny-yolo-book.tflite",
-        labels: "assets/tiny-yolo-book.txt",
+        model: "assets/models/tiny-yolo-book.tflite",
+        labels: "assets/models/tiny-yolo-book.txt",
       );
       print(res);
     } on PlatformException {
