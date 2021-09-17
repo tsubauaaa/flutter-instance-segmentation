@@ -8,22 +8,23 @@ import 'package:tflite_object_detection/models/recognition_model.dart';
 class TfliteService {
   TfliteService();
 
-  List<RecognitionModel> recognitions = [];
+  List<RecognitionModel>? recognitions;
 
   Future loadModel() async {
     Tflite.close();
     try {
       String? res = await Tflite.loadModel(
-        model: "assets/tiny-yolo-book.tflite",
-        labels: "assets/tiny-yolo-book.txt",
+        model: "assets/models/tiny-yolo-book.tflite",
+        labels: "assets/models/tiny-yolo-book.txt",
       );
       print(res);
-    } on PlatformException {
-      print('Failed to load model.');
+    } catch (e) {
+      debugPrint('Failed to load model. $e');
     }
   }
 
-  Future<List<RecognitionModel>> classifyImage(File image) async {
+  Future<List<RecognitionModel>?> classifyImage(File image) async {
+    loadModel();
     int startTime = DateTime.now().millisecondsSinceEpoch;
     var recognitionList = await Tflite.detectObjectOnImage(
       path: image.path,
@@ -32,16 +33,25 @@ class TfliteService {
       imageStd: 255.0,
       numResultsPerClass: 100,
     );
-    if (recognitionList != null && recognitionList.isEmpty) {
+    if (recognitionList != null && recognitionList.isNotEmpty) {
       recognitions = recognitionList
           .map(
             (e) => RecognitionModel(
-                e['rect'], e['confidenceInClass'], e['detectedClass']),
+                Rectangle(
+                  e['rect']['w'],
+                  e['rect']['x'],
+                  e['rect']['h'],
+                  e['rect']['y'],
+                ),
+                e['confidenceInClass'],
+                e['detectedClass']),
           )
           .toList();
     }
+
     int endTime = DateTime.now().millisecondsSinceEpoch;
     debugPrint("Inference took ${endTime - startTime}ms");
-    return recognitions;
+    if (recognitions == null) return null;
+    return recognitions!;
   }
 }
