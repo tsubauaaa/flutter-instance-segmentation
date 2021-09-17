@@ -1,95 +1,45 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tflite/tflite.dart';
+import 'package:tflite_object_detection/models/recognition_model.dart';
+import 'package:tflite_object_detection/providers/picked_image_provider.dart';
+import 'package:tflite_object_detection/providers/recognition_provider.dart';
 
-class CountPage extends StatefulWidget {
+class CountPage extends HookConsumerWidget {
   CountPage([Key? key]) : super(key: key);
 
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<CountPage> {
-  File? _image;
-  List? _recognitions;
-  double? _imageHeight;
-  double? _imageWidth;
-
-  Future loadModel() async {
-    Tflite.close();
-    try {
-      String? res = await Tflite.loadModel(
-        model: "assets/models/tiny-yolo-book.tflite",
-        labels: "assets/models/tiny-yolo-book.txt",
-      );
-      print(res);
-    } on PlatformException {
-      print('Failed to load model.');
-    }
-  }
-
-  Future predictImage(File image) async {
-    loadModel();
-    await yolov2Tiny(image);
-    final decodedImage = await decodeImageFromList(image.readAsBytesSync());
-    setState(
-      () {
-        _imageHeight = decodedImage.height.toDouble();
-        _imageWidth = decodedImage.width.toDouble();
-        _image = image;
-      },
-    );
-  }
-
-  Future yolov2Tiny(File image) async {
-    int startTime = new DateTime.now().millisecondsSinceEpoch;
-    var recognitions = await Tflite.detectObjectOnImage(
-      path: image.path,
-      model: "YOLO",
-      imageMean: 0.0,
-      imageStd: 255.0,
-      numResultsPerClass: 100,
-    );
-    setState(
-      () {
-        _recognitions = recognitions;
-      },
-    );
-    int endTime = new DateTime.now().millisecondsSinceEpoch;
-    debugPrint("Inference took ${endTime - startTime}ms");
-  }
-
-  List<Widget> renderBoxes(Size screen) {
-    if (_recognitions == null) return [];
-    if (_imageHeight == null || _imageWidth == null) return [];
+  List<Widget> renderBoxes(
+    Size screen,
+    ImageSize imageSize,
+    List<RecognitionModel> recognitions,
+  ) {
     double factorX = screen.width;
-    double factorY = _imageHeight! / _imageWidth! * screen.width;
+    double factorY = imageSize.height / imageSize.width * screen.width;
 
     // Remove recognition with overlapping bounding boxes
     // _recognition is in descending order of confidence
-    List<dynamic> displayRecognitions = List<dynamic>.from(_recognitions!);
+    List<dynamic> displayRecognitions = List<dynamic>.from(recognitions);
     for (int i = 0; i < displayRecognitions.length; i++) {
       final targetY = displayRecognitions[i]['rect']['y'];
       for (int j = 0; j < displayRecognitions.length; j++) {
         final comparisonY = displayRecognitions[j]['rect']['y'];
         final diff = ((targetY - comparisonY) * factorY).abs();
         if (diff != 0.0 && diff < 2.0) {
-          displayRecognitions.remove(_recognitions![j]);
+          displayRecognitions.remove(recognitions[j]);
         }
       }
     }
 
-    return displayRecognitions.map(
+    // return displayRecognitions.map(
+    return recognitions.map(
       (re) {
         return Positioned(
-          left: re["rect"]["x"] * factorX,
-          top: re["rect"]["y"] * factorY,
-          width: re["rect"]["w"] * factorX,
-          height: re["rect"]["h"] * factorY,
+          left: re.rect.x * factorX,
+          top: re.rect.y * factorY,
+          width: re.rect.w * factorX,
+          height: re.rect.h * factorY,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.all(Radius.circular(8.0)),
@@ -99,7 +49,7 @@ class _MyHomePageState extends State<CountPage> {
               ),
             ),
             child: Text(
-              "${re["detectedClass"]} ${(re["confidenceInClass"] * 100).toStringAsFixed(0)}%",
+              "${re.detectedClass} ${(re.confidenceInClass * 100).toStringAsFixed(0)}%",
               style: TextStyle(
                 background: Paint()..color = Colors.yellow,
                 color: Colors.black,
@@ -113,38 +63,69 @@ class _MyHomePageState extends State<CountPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final ImagePicker _picker = ImagePicker();
+  Widget build(BuildContext context, WidgetRef ref) {
     Size size = MediaQuery.of(context).size;
-    List<Widget> stackChildren = [];
+    final pickedImageState = ref.watch(pickedImageProvider);
+    final recognitionsState = ref.watch(recognitionProvider);
+    if (pickedImageState == null) {
+      return Center(
+        child: Container(
+          margin: EdgeInsets.only(top: size.height / 2 - 140),
+          child: const Icon(
+            Icons.image_rounded,
+            color: Colors.white,
+            size: 100,
+          ),
+        ),
+      );
+    }
+    final ImagePicker _picker = ImagePicker();
 
-    stackChildren.add(
-      Positioned(
-        top: 0.0,
-        left: 0.0,
-        width: size.width,
-        child: _image == null
-            ? Center(
-                child: Container(
-                  margin: EdgeInsets.only(top: size.height / 2 - 140),
-                  child: Icon(
-                    Icons.image_rounded,
-                    color: Colors.white,
-                    size: 100,
-                  ),
-                ),
-              )
-            : Image.file(_image!),
-      ),
-    );
-    stackChildren.addAll(renderBoxes(size));
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Container(
-        margin: EdgeInsets.only(top: 50),
-        color: Colors.black,
-        child: Stack(
-          children: stackChildren,
+      body: recognitionsState.when(
+        data: (recognitions) {
+          List<Widget> stackChildren = [];
+          stackChildren.add(
+            Positioned(
+              top: 0.0,
+              left: 0.0,
+              width: size.width,
+              child: Image.file(pickedImageState),
+            ),
+          );
+          ref.read(pickedImageProvider.notifier).getImageSize().then(
+                (imageSize) => stackChildren.addAll(
+                  renderBoxes(size, imageSize, recognitions!),
+                ),
+              );
+          return Container(
+            margin: const EdgeInsets.only(top: 50),
+            color: Colors.black,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: stackChildren,
+                  ),
+                ),
+                // if (_displayRecognitions != null)
+                //   Text(
+                //     _displayRecognitions!.length.toString(),
+                //     style: const TextStyle(
+                //       color: Colors.white,
+                //       fontSize: 88,
+                //     ),
+                //   ),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        error: (err, stack) => Center(
+          child: Text(err.toString()),
         ),
       ),
       floatingActionButton: InkWell(
@@ -152,18 +133,14 @@ class _MyHomePageState extends State<CountPage> {
           final XFile? pickedFile =
               await _picker.pickImage(source: ImageSource.gallery);
           if (pickedFile == null) return;
-          File image = File(pickedFile.path);
-          predictImage(image);
-          // ref.read(pickedImageStringProvider.notifier).update(image);
+          ref.read(pickedImageProvider.notifier).update(pickedFile);
         },
         child: FloatingActionButton(
           onPressed: () async {
             final XFile? pickedFile =
                 await _picker.pickImage(source: ImageSource.camera);
             if (pickedFile == null) return;
-            File image = File(pickedFile.path);
-            predictImage(image);
-            // ref.read(pickedImageStringProvider.notifier).update(image);
+            ref.read(pickedImageProvider.notifier).update(pickedFile);
           },
           child: const Icon(Icons.camera),
         ),

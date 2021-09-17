@@ -1,27 +1,13 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:tflite_object_detection/models/recognition_model.dart';
+import 'package:tflite_object_detection/providers/picked_image_provider.dart';
+import 'package:tflite_object_detection/providers/tflite_service_provider.dart';
 
-final recognitionProvider =
-    StateNotifierProvider<RecognitionController, RecognitionModel?>(
-  (ref) => RecognitionController(),
+final recognitionProvider = FutureProvider.autoDispose<List<RecognitionModel>?>(
+  (ref) async {
+    final tfliteService = ref.read(tfliteServiceProvider);
+    final image = ref.watch(pickedImageProvider);
+    if (image == null) return null;
+    return tfliteService.classifyImage(image);
+  },
 );
-
-class RecognitionController extends StateNotifier<RecognitionModel?> {
-  RecognitionController() : super(null);
-
-  update(recognition) => state = recognition;
-}
-
-class RecognitionModel {
-  RecognitionModel(this.rect, this.confidenceInClass, this.detectedClass);
-  Rectangle rect;
-  double confidenceInClass;
-  String detectedClass;
-}
-
-class Rectangle {
-  Rectangle(this.w, this.x, this.h, this.y);
-  double w;
-  double x;
-  double h;
-  double y;
-}
