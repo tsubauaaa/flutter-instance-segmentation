@@ -14,67 +14,17 @@ class CountPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     Size size = MediaQuery.of(context).size;
     final pickedImageState = ref.watch(pickedImageProvider);
+    final imageSize = ref.read(pickedImageProvider.notifier).getImageSize();
     final recognitionsState = ref.watch(recognitionProvider);
     final ImagePicker _picker = ImagePicker();
-
-    List<Widget> renderBoxes(
-      Size screen,
-      ImageSize imageSize,
-      List<RecognitionModel> recognitions,
-    ) {
-      double factorX = screen.width;
-      double factorY = imageSize.height / imageSize.width * screen.width;
-
-      // Remove recognition with overlapping bounding boxes
-      // _recognition is in descending order of confidence
-      List<RecognitionModel> displayRecognitions =
-          List<RecognitionModel>.from(recognitions);
-      for (int i = 0; i < displayRecognitions.length; i++) {
-        final targetY = displayRecognitions[i].rect.y;
-        for (int j = 0; j < displayRecognitions.length; j++) {
-          final comparisonY = displayRecognitions[j].rect.y;
-          final diff = ((targetY - comparisonY) * factorY).abs();
-          if (diff != 0.0 && diff < 2.0) {
-            displayRecognitions.remove(recognitions[j]);
-          }
-        }
-      }
-
-      // return displayRecognitions.map(
-      return displayRecognitions.map(
-        (re) {
-          return Positioned(
-            left: re.rect.x * factorX,
-            top: re.rect.y * factorY,
-            width: re.rect.w * factorX,
-            height: re.rect.h * factorY,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                border: Border.all(
-                  color: Colors.yellow,
-                  width: 2,
-                ),
-              ),
-              child: Text(
-                "${re.detectedClass} ${(re.confidenceInClass * 100).toStringAsFixed(0)}%",
-                style: TextStyle(
-                  background: Paint()..color = Colors.yellow,
-                  color: Colors.black,
-                  fontSize: 15.0,
-                ),
-              ),
-            ),
-          );
-        },
-      ).toList();
-    }
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: recognitionsState.when(
         data: (recognitions) {
-          if (pickedImageState == null || recognitions == null) {
+          if (pickedImageState == null ||
+              imageSize == null ||
+              recognitions == null) {
             return Center(
               child: Container(
                 margin: EdgeInsets.only(top: size.height / 2 - 140),
@@ -86,7 +36,6 @@ class CountPage extends HookConsumerWidget {
               ),
             );
           }
-          debugPrint(recognitions[0].confidenceInClass.toString());
           List<Widget> stackChildren = [];
           stackChildren.add(
             Positioned(
@@ -96,15 +45,55 @@ class CountPage extends HookConsumerWidget {
               child: Image.file(pickedImageState),
             ),
           );
-          ref.read(pickedImageProvider.notifier).getImageSize().then(
-                (imageSize) => stackChildren.addAll(
-                  renderBoxes(size, imageSize, recognitions),
+          double factorX = size.width;
+          double factorY = imageSize.height / imageSize.width * size.width;
+
+          // Remove recognition with overlapping bounding boxes
+          // _recognition is in descending order of confidence
+          List<RecognitionModel> displayRecognitions =
+              List<RecognitionModel>.from(recognitions);
+          for (int i = 0; i < displayRecognitions.length; i++) {
+            final targetY = displayRecognitions[i].rect.y;
+            for (int j = 0; j < displayRecognitions.length; j++) {
+              final comparisonY = displayRecognitions[j].rect.y;
+              final diff = ((targetY - comparisonY) * factorY).abs();
+              if (diff != 0.0 && diff < 2.0) {
+                displayRecognitions.remove(recognitions[j]);
+              }
+            }
+          }
+          stackChildren.addAll(displayRecognitions.map(
+            (re) {
+              return Positioned(
+                left: re.rect.x * factorX,
+                top: re.rect.y * factorY,
+                width: re.rect.w * factorX,
+                height: re.rect.h * factorY,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                    border: Border.all(
+                      color: Colors.yellow,
+                      width: 2,
+                    ),
+                  ),
+                  child: Text(
+                    "${re.detectedClass} ${(re.confidenceInClass * 100).toStringAsFixed(0)}%",
+                    style: TextStyle(
+                      background: Paint()..color = Colors.yellow,
+                      color: Colors.black,
+                      fontSize: 15.0,
+                    ),
+                  ),
                 ),
               );
+            },
+          ).toList());
           return Container(
             margin: const EdgeInsets.only(top: 50),
             color: Colors.black,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Expanded(
                   child: Stack(

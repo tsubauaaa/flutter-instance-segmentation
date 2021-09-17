@@ -7,7 +7,7 @@ packages:
       name: async
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.8.1"
+    version: "2.7.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -114,6 +114,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.14.3"
+  hashcodes:
+    dependency: transitive
+    description:
+      name: hashcodes
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   hooks_riverpod:
     dependency: "direct main"
     description:
@@ -156,6 +163,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.4.1"
+  image_size_getter:
+    dependency: "direct main"
+    description:
+      name: image_size_getter
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   js:
     dependency: transitive
     description:
@@ -272,7 +286,7 @@ packages:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.2"
+    version: "0.4.1"
   tflite:
     dependency: "direct main"
     description:

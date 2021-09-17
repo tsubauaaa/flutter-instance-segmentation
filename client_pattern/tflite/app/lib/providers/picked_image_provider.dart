@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_size_getter/file_input.dart';
+import 'package:image_size_getter/image_size_getter.dart';
 
 final pickedImageProvider =
     StateNotifierProvider.autoDispose<PickedImageController, File?>(
@@ -16,11 +17,10 @@ class PickedImageController extends StateNotifier<File?> {
     state = File(image.path);
   }
 
-  Future<ImageSize> getImageSize() async {
-    final decodedImage = await decodeImageFromList(state!.readAsBytesSync());
-    final imageHeight = decodedImage.height.toDouble();
-    final imageWidth = decodedImage.width.toDouble();
-    return ImageSize(imageHeight, imageWidth);
+  Size? getImageSize() {
+    if (state == null) return null;
+    final Size imageSize = ImageSizeGetter.getSize(FileInput(state!));
+    return imageSize;
   }
 }
 
