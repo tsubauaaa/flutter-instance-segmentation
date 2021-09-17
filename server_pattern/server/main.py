@@ -14,6 +14,7 @@ from PIL import Image
 from pydantic import BaseModel
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
+from torchvision.transforms import functional, transforms
 
 
 def get_instance_segmentation_model(num_classes):
@@ -58,20 +59,22 @@ threshold = 0.8
 app = FastAPI()
 
 
-def generate_result(prediction, input_image: torch):
-    output_image: ndarray = input_image.mul(255).permute(1, 2, 0).byte().numpy()
+def generate_result(prediction, original_image: Image):
+    image_size = original_image.size
+
+    output_image: ndarray = np.array(original_image)
     fill_image = np.copy(output_image)
     num_of_books = 0
 
     for i, score in enumerate(prediction[0]["scores"].tolist()):
         if score < threshold:
             continue
-
-        instance_mask: ndarray = (
-            prediction[0]["masks"][i, 0].mul(255).byte().cpu().numpy()
+        instance_mask: Image = functional.to_pil_image(
+            prediction[0]["masks"][i, 0].mul(255).byte()
         )
+        instance_mask = instance_mask.resize(image_size, Image.NEAREST)
         random_color = list(np.random.choice(range(256), size=3))
-        fill_image[instance_mask > 0] = random_color
+        fill_image[np.array(instance_mask) > 0] = random_color
         num_of_books += 1
 
     fill_image = Image.fromarray(fill_image)
@@ -92,13 +95,24 @@ async def index(data: InputData):
     # data.imageをmodelのinputに合わせる
     decimg = base64.b64decode(data.image, validate=True)
     decimg = Image.open(BytesIO(decimg)).convert("RGB")
-    input_image = torchvision.transforms.functional.to_tensor(decimg)
+    image_width = decimg.size[0]
+    image_height = decimg.size[1]
+    size_ratio = image_width / image_height
+    resize_height = 256
+    transform = transforms.Compose(
+        [
+            transforms.Resize((resize_height, int(resize_height * size_ratio))),
+            transforms.ToTensor(),
+        ]
+    )
+
+    input_image = transform(decimg)
 
     # 推論
     prediction = model([input_image.to(device)])
 
     # アプリで表示するためのresponse生成
-    output_image, num_books = generate_result(prediction, input_image)
+    output_image, num_books = generate_result(prediction, decimg)
     output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
     _, res_image = cv2.imencode(".png", output_image)
 
