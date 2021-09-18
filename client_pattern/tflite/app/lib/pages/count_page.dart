@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tflite_object_detection/components/rectangles_containers.dart';
 import 'package:tflite_object_detection/models/recognition_model.dart';
 import 'package:tflite_object_detection/providers/picked_image_provider.dart';
 import 'package:tflite_object_detection/providers/recognition_provider.dart';
@@ -64,28 +65,10 @@ class CountPage extends HookConsumerWidget {
           }
           stackChildren.addAll(displayRecognitions.map(
             (re) {
-              return Positioned(
-                left: re.rect.x * factorX,
-                top: re.rect.y * factorY,
-                width: re.rect.w * factorX,
-                height: re.rect.h * factorY,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                    border: Border.all(
-                      color: Colors.yellow,
-                      width: 2,
-                    ),
-                  ),
-                  child: Text(
-                    "${re.detectedClass} ${(re.confidenceInClass * 100).toStringAsFixed(0)}%",
-                    style: TextStyle(
-                      background: Paint()..color = Colors.yellow,
-                      color: Colors.black,
-                      fontSize: 15.0,
-                    ),
-                  ),
-                ),
+              return RectanglesContainers(
+                factorX: factorX,
+                factorY: factorY,
+                recognition: re,
               );
             },
           ).toList());
