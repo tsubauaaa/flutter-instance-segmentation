@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tflite_object_detection/components/rectangles_containers.dart';
-import 'package:tflite_object_detection/models/recognition_model.dart';
+import 'package:tflite_object_detection/providers/display_recognition_provider.dart';
 import 'package:tflite_object_detection/providers/picked_image_provider.dart';
-import 'package:tflite_object_detection/providers/recognition_provider.dart';
 
 class CountPage extends HookConsumerWidget {
   const CountPage([Key? key]) : super(key: key);
@@ -16,16 +15,17 @@ class CountPage extends HookConsumerWidget {
     Size size = MediaQuery.of(context).size;
     final pickedImageState = ref.watch(pickedImageProvider);
     final imageSize = ref.read(pickedImageProvider.notifier).getImageSize();
-    final recognitionsState = ref.watch(recognitionProvider);
+    final displayRecognitionsState =
+        ref.watch(displayRecognitionProvider(size));
     final ImagePicker _picker = ImagePicker();
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: recognitionsState.when(
-        data: (recognitions) {
+      body: displayRecognitionsState.when(
+        data: (dispRec) {
           if (pickedImageState == null ||
               imageSize == null ||
-              recognitions == null) {
+              dispRec == null) {
             return Center(
               child: Container(
                 margin: EdgeInsets.only(top: size.height / 2 - 140),
@@ -48,22 +48,7 @@ class CountPage extends HookConsumerWidget {
           );
           double factorX = size.width;
           double factorY = imageSize.height / imageSize.width * size.width;
-
-          // Remove recognition with overlapping bounding boxes
-          // _recognition is in descending order of confidence
-          List<RecognitionModel> displayRecognitions =
-              List<RecognitionModel>.from(recognitions);
-          for (int i = 0; i < displayRecognitions.length; i++) {
-            final targetY = displayRecognitions[i].rect.y;
-            for (int j = 0; j < displayRecognitions.length; j++) {
-              final comparisonY = displayRecognitions[j].rect.y;
-              final diff = ((targetY - comparisonY) * factorY).abs();
-              if (diff != 0.0 && diff < 2.0) {
-                displayRecognitions.remove(recognitions[j]);
-              }
-            }
-          }
-          stackChildren.addAll(displayRecognitions.map(
+          stackChildren.addAll(dispRec.map(
             (re) {
               return RectanglesContainers(
                 factorX: factorX,
@@ -83,14 +68,13 @@ class CountPage extends HookConsumerWidget {
                     children: stackChildren,
                   ),
                 ),
-                // if (_displayRecognitions != null)
-                //   Text(
-                //     _displayRecognitions!.length.toString(),
-                //     style: const TextStyle(
-                //       color: Colors.white,
-                //       fontSize: 88,
-                //     ),
-                //   ),
+                Text(
+                  dispRec.length.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 88,
+                  ),
+                ),
               ],
             ),
           );
