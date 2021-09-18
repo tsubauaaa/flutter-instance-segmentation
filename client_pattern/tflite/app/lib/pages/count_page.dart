@@ -46,6 +46,7 @@ class CountPage extends HookConsumerWidget {
               child: Image.file(pickedImageState),
             ),
           );
+          // TODO: RectangleContainersをHookWidgetにする
           double factorX = size.width;
           double factorY = imageSize.height / imageSize.width * size.width;
           stackChildren.addAll(dispRec.map(
