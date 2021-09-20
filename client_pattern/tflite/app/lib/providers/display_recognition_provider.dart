@@ -21,11 +21,9 @@ final displayRecognitionProvider =
     // _recognition is in descending order of confidence
     List<RecognitionModel> displayRecognitions = [];
     List<List<RecognitionModel>> duplicateGroups = [];
-    for (int i = 0; i < recognitions.length; i++) {
+    for (RecognitionModel target in recognitions) {
       List<RecognitionModel> group = [];
-      var target = recognitions[i];
-      for (int j = 0; j < recognitions.length; j++) {
-        var comparison = recognitions[j];
+      for (RecognitionModel comparison in recognitions) {
         var diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
         if (target.rect != comparison.rect && diff <= 2.0) {
           group.add(target);
@@ -36,32 +34,29 @@ final displayRecognitionProvider =
         displayRecognitions.add(target);
         continue;
       }
+      // Eliminate duplicates within group, then sort group by rectangle y
       group = group.toSet().toList();
       group.sort((a, b) => a.rect.y.compareTo(b.rect.y));
+
       duplicateGroups.add(group);
     }
 
     if (duplicateGroups.isEmpty) return displayRecognitions;
 
     // Eliminate duplicate groups in duplicationGroup
-    Set<List<RecognitionModel>> seens = {};
-    List<List<RecognitionModel>> newDuplicateGroups = [];
-    for (var group in duplicateGroups) {
-      bool isSeen = false;
-      for (var seen in seens) {
-        if (listEquals(group, seen)) {
-          isSeen = true;
-        }
+    // and add the first of a no duplicate group to displayRecognitions
+    Set<List<RecognitionModel>> seen = {};
+    for (List<RecognitionModel> group in duplicateGroups) {
+      bool hasSeen = false;
+      for (List<RecognitionModel> seenGroup in seen) {
+        if (listEquals(group, seenGroup)) hasSeen = true;
       }
-      if (!isSeen) {
-        newDuplicateGroups.add(group);
-        seens.add(group);
-      }
+      if (hasSeen) continue;
+
+      displayRecognitions.add(group.first);
+      seen.add(group);
     }
 
-    for (var group in newDuplicateGroups) {
-      displayRecognitions.add(group[0]);
-    }
     return displayRecognitions;
   },
 );
