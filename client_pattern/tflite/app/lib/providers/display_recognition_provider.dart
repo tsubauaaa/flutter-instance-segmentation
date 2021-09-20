@@ -22,58 +22,46 @@ final displayRecognitionProvider =
     List<RecognitionModel> displayRecognitions = [];
     List<List<RecognitionModel>> duplicateGroups = [];
     for (int i = 0; i < recognitions.length; i++) {
-      bool isDup = false;
       List<RecognitionModel> group = [];
       var target = recognitions[i];
       for (int j = 0; j < recognitions.length; j++) {
         var comparison = recognitions[j];
         var diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
         if (target.rect != comparison.rect && diff <= 2.0) {
-          isDup = true;
           group.add(target);
           group.add(comparison);
         }
       }
-      if (!isDup) {
+      if (group.isEmpty) {
         displayRecognitions.add(target);
         continue;
       }
+      group = group.toSet().toList();
+      group.sort((a, b) => a.rect.y.compareTo(b.rect.y));
       duplicateGroups.add(group);
     }
 
     if (duplicateGroups.isEmpty) return displayRecognitions;
 
-    for (int i = 0; i < duplicateGroups.length; i++) {
-      var target = duplicateGroups[i];
-      for (int j = 0; j < duplicateGroups.length; j++) {
-        var comparison = duplicateGroups[j];
-        if (listEquals(target, comparison)) {
-          duplicateGroups.removeAt(j);
+    // Eliminate duplicate groups in duplicationGroup
+    Set<List<RecognitionModel>> seens = {};
+    List<List<RecognitionModel>> newDuplicateGroups = [];
+    for (var group in duplicateGroups) {
+      bool isSeen = false;
+      for (var seen in seens) {
+        if (listEquals(group, seen)) {
+          isSeen = true;
         }
+      }
+      if (!isSeen) {
+        newDuplicateGroups.add(group);
+        seens.add(group);
       }
     }
 
-    print(duplicateGroups);
-
-    for (var group in duplicateGroups) {
+    for (var group in newDuplicateGroups) {
       displayRecognitions.add(group[0]);
     }
-
-    // List<RecognitionModel> displayRecognitions =
-    //     List<RecognitionModel>.from(recognitions);
-    // for (int i = 0; i < displayRecognitions.length; i++) {
-    //   final targetRect = displayRecognitions[i].rect;
-    //   final targetY = targetRect.y;
-    //   for (int j = 0; j < displayRecognitions.length; j++) {
-    //     final comparisonRect = displayRecognitions[j].rect;
-    //     final comparisonY = comparisonRect.y;
-    //     final diff = ((targetY - comparisonY) * factorY).abs();
-    //     if (targetRect != comparisonRect && diff <= 2.0) {
-    //       displayRecognitions.remove(recognitions[j]);
-    //     }
-    //     print(displayRecognitions.length);
-    //   }
-    // }
     return displayRecognitions;
   },
 );
