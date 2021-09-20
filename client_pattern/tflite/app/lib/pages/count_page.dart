@@ -20,20 +20,15 @@ class CountPage extends HookConsumerWidget {
     final ImagePicker _picker = ImagePicker();
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: displayRecognitionsState.when(
-        data: (dispRec) {
+        data: (displayRecognitions) {
           if (pickedImageState == null ||
               imageSize == null ||
-              dispRec == null) {
-            return Center(
-              child: Container(
-                margin: EdgeInsets.only(top: size.height / 2 - 140),
-                child: const Icon(
-                  Icons.image_rounded,
-                  color: Colors.white,
-                  size: 100,
-                ),
+              displayRecognitions == null) {
+            return const Center(
+              child: Text(
+                'Let\'s count the books.',
+                style: TextStyle(fontSize: 32),
               ),
             );
           }
@@ -46,34 +41,34 @@ class CountPage extends HookConsumerWidget {
               child: Image.file(pickedImageState),
             ),
           );
-          // TODO: RectangleContainersをHookWidgetにする
           double factorX = size.width;
           double factorY = imageSize.height / imageSize.width * size.width;
-          stackChildren.addAll(dispRec.map(
-            (re) {
+          stackChildren.addAll(displayRecognitions.map(
+            (displayRecognition) {
               return RectanglesContainers(
                 factorX: factorX,
                 factorY: factorY,
-                recognition: re,
+                recognition: displayRecognition,
               );
             },
           ).toList());
           return Container(
-            margin: const EdgeInsets.only(top: 50),
-            color: Colors.black,
+            margin: const EdgeInsets.only(top: 150),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
+                Flexible(
                   child: Stack(
                     children: stackChildren,
                   ),
                 ),
-                Text(
-                  dispRec.length.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 88,
+                const SizedBox(height: 48),
+                Flexible(
+                  child: Text(
+                    displayRecognitions.length.toString(),
+                    style: const TextStyle(
+                      fontSize: 88,
+                    ),
                   ),
                 ),
               ],

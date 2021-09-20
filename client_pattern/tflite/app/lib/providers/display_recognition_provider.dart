@@ -18,19 +18,43 @@ final displayRecognitionProvider =
 
     // Remove recognition with overlapping bounding boxes
     // _recognition is in descending order of confidence
-    List<RecognitionModel> displayRecognitions =
-        List<RecognitionModel>.from(recognitions);
-    for (int i = 0; i < displayRecognitions.length; i++) {
-      final targetY = displayRecognitions[i].rect.y;
-      for (int j = 0; j < displayRecognitions.length; j++) {
-        final comparisonY = displayRecognitions[j].rect.y;
-        final diff = ((targetY - comparisonY) * factorY).abs();
-        // TODO: 全く同じポイントがありそう
-        if (diff != 0.0 && diff < 2.0) {
-          displayRecognitions.remove(recognitions[j]);
+    List<List<RecognitionModel>> duplicateGroups = [];
+    for (int i = 0; i < recognitions.length; i++) {
+      List<RecognitionModel> group = [];
+      final target = recognitions[i];
+      for (int j = 0; j < recognitions.length; j++) {
+        final comparison = recognitions[j];
+        final diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
+        if (target.rect != comparison.rect && diff <= 2.0) {
+          group.add(comparison);
         }
       }
+      duplicateGroups.add(group);
     }
+    // print(duplicateGroups.length);
+    // print(duplicateGroups.toSet().toList().length);
+    if (duplicateGroups.isEmpty) return recognitions;
+
+    List<RecognitionModel> displayRecognitions = [];
+    for (var group in duplicateGroups.toSet().toList()) {
+      displayRecognitions.add(group[0]);
+    }
+
+    // List<RecognitionModel> displayRecognitions =
+    //     List<RecognitionModel>.from(recognitions);
+    // for (int i = 0; i < displayRecognitions.length; i++) {
+    //   final targetRect = displayRecognitions[i].rect;
+    //   final targetY = targetRect.y;
+    //   for (int j = 0; j < displayRecognitions.length; j++) {
+    //     final comparisonRect = displayRecognitions[j].rect;
+    //     final comparisonY = comparisonRect.y;
+    //     final diff = ((targetY - comparisonY) * factorY).abs();
+    //     if (targetRect != comparisonRect && diff <= 2.0) {
+    //       displayRecognitions.remove(recognitions[j]);
+    //     }
+    //     print(displayRecognitions.length);
+    //   }
+    // }
     return displayRecognitions;
   },
 );
