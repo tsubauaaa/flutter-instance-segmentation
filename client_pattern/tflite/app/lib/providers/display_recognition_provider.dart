@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:tflite_object_detection/models/recognition_model.dart';
 import 'package:tflite_object_detection/providers/picked_image_provider.dart';
@@ -18,25 +19,43 @@ final displayRecognitionProvider =
 
     // Remove recognition with overlapping bounding boxes
     // _recognition is in descending order of confidence
+    List<RecognitionModel> displayRecognitions = [];
     List<List<RecognitionModel>> duplicateGroups = [];
     for (int i = 0; i < recognitions.length; i++) {
+      bool isDup = false;
       List<RecognitionModel> group = [];
-      final target = recognitions[i];
+      var target = recognitions[i];
       for (int j = 0; j < recognitions.length; j++) {
-        final comparison = recognitions[j];
-        final diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
+        var comparison = recognitions[j];
+        var diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
         if (target.rect != comparison.rect && diff <= 2.0) {
+          isDup = true;
+          group.add(target);
           group.add(comparison);
         }
       }
+      if (!isDup) {
+        displayRecognitions.add(target);
+        continue;
+      }
       duplicateGroups.add(group);
     }
-    // print(duplicateGroups.length);
-    // print(duplicateGroups.toSet().toList().length);
-    if (duplicateGroups.isEmpty) return recognitions;
 
-    List<RecognitionModel> displayRecognitions = [];
-    for (var group in duplicateGroups.toSet().toList()) {
+    if (duplicateGroups.isEmpty) return displayRecognitions;
+
+    for (int i = 0; i < duplicateGroups.length; i++) {
+      var target = duplicateGroups[i];
+      for (int j = 0; j < duplicateGroups.length; j++) {
+        var comparison = duplicateGroups[j];
+        if (listEquals(target, comparison)) {
+          duplicateGroups.removeAt(j);
+        }
+      }
+    }
+
+    print(duplicateGroups);
+
+    for (var group in duplicateGroups) {
       displayRecognitions.add(group[0]);
     }
 
