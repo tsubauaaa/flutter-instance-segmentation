@@ -2,9 +2,11 @@
 
 ### カスタムデータで学習
 
+参考 URL: https://manivannan-ai.medium.com/how-to-train-yolov2-to-detect-custom-objects-9010df784f36
+
 - tiny_yolov2_train_books.ipynb  
-  　これを実施する。データ作成は Yolo_Label で行った。  
-  参考 URL: https://github.com/developer0hye/Yolo_Label
+   これを実施する。データ作成は Yolo_Label で行った。  
+   参考 URL: https://github.com/developer0hye/Yolo_Label
 
 ### convert weights to Protobuf
 
