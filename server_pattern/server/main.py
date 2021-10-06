@@ -1,6 +1,5 @@
 import base64
 from io import BytesIO
-from textwrap import fill
 
 import cv2
 import numpy as np
