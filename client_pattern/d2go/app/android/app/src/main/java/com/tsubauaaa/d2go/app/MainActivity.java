@@ -20,7 +20,7 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 /**
- * クラスプロパティ
+ * Class property
  * [CHANNEL] MethodChannelで参照される識別子
  * [modules] ArrayList<org.pytorch.Module>
  */
@@ -52,9 +52,11 @@ public class MainActivity extends FlutterActivity {
 
 
     /**
-     * @param call absPath org.pytorch.Moduleのloadメソッドが読み込むD2Goモデル(d2go.pt)のxxxパス
-     * @param call assetPath モデルの読み込み失敗時に、ログ表示するために使うD2Goモデル(d2go.pt)の相対パス
-     * @param result 成功した場合は、ArrayList<Module>のindexをresult.successで返却する
+     * <p>d2goモデルを読み込んで、[modules]にorg.pytorch.Moduleを追加し、そのindexを返却する</>
+     *
+     * @param call absPath org.pytorch.Moduleのloadメソッドが読み込むD2Goモデル(d2go.pt)のxxxパス,
+     *             assetPath モデルの読み込み失敗時に、ログ表示するために使うD2Goモデル(d2go.pt)の相対パス
+     * @param result 成功した場合は、ArrayList<org.pytorch.Module>のindexをresult.successで返却する
      */
     private void loadModel(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         try {
@@ -68,15 +70,18 @@ public class MainActivity extends FlutterActivity {
     }
 
     /**
+     * <p>D2Goモデルを使って推論し、結果を整形して返却する</>
      *
-     * @param call index ArrayList<Module>のindex
-     * @param call image 推論対象の画像のList<Bytes>
-     * @param call width 画像の横長
-     * @param call height 画像の縦長
-     * @param call mean Normalizeで使う平均値
-     * @param call std Normalizeで使う標準偏差
-     * @param call minScore しきい値
-     * @param result 成功した場合は、[outputs]をresult.successで返却する
+     * @param call [index] ArrayList<Module>のindex,
+     *             [image] 推論対象の画像のList<Bytes>,
+     *             [width] 画像の横長,
+     *             [height] 画像の縦長,
+     *             [mean] Normalizeで使う平均値,
+     *             [std] Normalizeで使う標準偏差,
+     *             [minScore] しきい値
+     * @param result 成功した場合は、[outputs]をresult.successで返却する,
+     *               [outputs]は{ "rect": { "left": Float, "top": Float, "right": Float, "bottom": Float },
+     *               "confidenceInClass": Float, "detectedClass": Long }のList
      */
     private void d2go(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         Module module;
@@ -161,6 +166,8 @@ public class MainActivity extends FlutterActivity {
     }
 
     /**
+     * <p>Normalize parameterをFloat変換する</>
+     *
      * @param objects 変換前のDouble[]
      * @return primitives 変換後のfloat[]
      */
