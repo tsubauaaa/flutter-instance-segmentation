@@ -4,12 +4,10 @@ import android.util.Log;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -81,14 +79,14 @@ public class MainActivity extends FlutterActivity {
      * @param result 成功した場合は、[outputs]をresult.successで返却する
      */
     private void d2go(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
-        Module mModule = null;
-        Bitmap bitmap = null;
-        float [] mean = null;
-        float [] std = null;
-        double minScore = 0.0;
-        int inputWidth = 640;
-        int inputHeight = 640;
-        float mImgScaleX, mImgScaleY, mIvScaleX, mIvScaleY, mStartX, mStartY;
+        Module module;
+        Bitmap bitmap;
+        float [] mean;
+        float [] std;
+        double minScore;
+        int inputWidth;
+        int inputHeight;
+        float imageWidthScale, imageHeightScale;
 
 
         int index = call.argument("index");
@@ -97,9 +95,9 @@ public class MainActivity extends FlutterActivity {
 
         // meanとstdをfloat変換
         ArrayList<Double> _mean = call.argument("mean");
-        mean = Convert.toFloatPrimitives(_mean.toArray(new Double[0]));
+        mean = toFloatPrimitives(_mean.toArray(new Double[0]));
         ArrayList<Double> _std = call.argument("std");
-        std = Convert.toFloatPrimitives(_std.toArray(new Double[0]));
+        std = toFloatPrimitives(_std.toArray(new Double[0]));
 
         minScore = call.argument("minScore");
 
@@ -107,23 +105,21 @@ public class MainActivity extends FlutterActivity {
         inputHeight = call.argument("height");
 
         // loadModelして生成したPyTorch Moduleを取得
-        mModule = modules.get(index);
+        module = modules.get(index);
 
         // bitmap objectをimageから作成してサイズを復元
         bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true);
 
-        mImgScaleX = (float)bitmap.getWidth() / inputWidth;
-        mImgScaleY = (float)bitmap.getHeight() / inputHeight;
-        Log.i("flutter_d2go", Integer.toString(bitmap.getWidth()));
-        Log.i("flutter_d2go", Integer.toString(bitmap.getHeight()));
+        imageWidthScale = (float)bitmap.getWidth() / inputWidth;
+        imageHeightScale = (float)bitmap.getHeight() / inputHeight;
 
         final FloatBuffer floatBuffer = Tensor.allocateFloatBuffer(3 * resizedBitmap.getWidth() * resizedBitmap.getHeight());
         TensorImageUtils.bitmapToFloatBuffer(resizedBitmap,0,0, resizedBitmap.getWidth(), resizedBitmap.getHeight(), mean, std, floatBuffer, 0);
         final Tensor inputTensor = Tensor.fromBlob(floatBuffer, new long[] {3, resizedBitmap.getHeight(), resizedBitmap.getWidth()});
 
         // 推論
-        IValue[] outputTuple = mModule.forward(IValue.listFrom(inputTensor)).toTuple();
+        IValue[] outputTuple = module.forward(IValue.listFrom(inputTensor)).toTuple();
 
         final Map<String, IValue> map = outputTuple[1].toList()[0].toDictStringKey();
 
@@ -143,36 +139,37 @@ public class MainActivity extends FlutterActivity {
             final int totalInstances = scoresData.length;
 
             // 全インスタンス数 x outputカラム(left, top, right, bottom, score, label)
-            List<Map<String, Object>> outputs = new ArrayList<Map<String, Object>>();
-//            float[] outputs = new float[totalInstances * 6];
-//            int count = 0;
+            List<Map<String, Object>> outputs = new ArrayList<>();
             for (int i = 0; i < totalInstances; i++) {
                 if (scoresData[i] < minScore)
                     continue;
-                Map<String, Object> output = new LinkedHashMap<String, Object>();
-                Map<String, Float> rect = new LinkedHashMap<String, Float>();
-                rect.put("left", boxesData[4 * i + 0] * mImgScaleX);
-                rect.put("top", boxesData[4 * i + 1] * mImgScaleY);
-                rect.put("right", boxesData[4 * i + 2] * mImgScaleX);
-                rect.put("bottom", boxesData[4 * i + 3] * mImgScaleY);
+                Map<String, Object> output = new LinkedHashMap<>();
+                Map<String, Float> rect = new LinkedHashMap<>();
+                rect.put("left", boxesData[4 * i + 0] * imageWidthScale);
+                rect.put("top", boxesData[4 * i + 1] * imageHeightScale);
+                rect.put("right", boxesData[4 * i + 2] * imageWidthScale);
+                rect.put("bottom", boxesData[4 * i + 3] * imageHeightScale);
 
                 output.put("rect", rect);
                 output.put("confidenceInClass", scoresData[i]);
                 output.put("detectedClass", labelsData[i] - 1);
 
                 outputs.add(output);
-//                outputs[6 * count + 0] = boxesData[4 * i + 0]; // left
-//                outputs[6 * count + 1] = boxesData[4 * i + 1]; // top
-//                outputs[6 * count + 2] = boxesData[4 * i + 2]; // right
-//                outputs[6 * count + 3] = boxesData[4 * i + 3]; // bottom
-//                outputs[6 * count + 4] = scoresData[i]; // score
-//                outputs[6 * count + 5] = labelsData[i] - 1; // label
-//                count++;
             }
             result.success(outputs);
         }
     }
 
-
+    /**
+     * @param objects 変換前のDouble[]
+     * @return primitives 変換後のfloat[]
+     */
+    private static float[] toFloatPrimitives(Double[] objects) {
+        float[] primitives = new float[objects.length];
+        for (int i = 0; i < objects.length; i++) {
+            primitives[i] = objects[i].floatValue();
+        }
+        return  primitives;
+    }
 }
 

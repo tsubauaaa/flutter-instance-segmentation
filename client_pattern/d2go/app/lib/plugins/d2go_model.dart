@@ -43,9 +43,6 @@ class D2GoModel {
       },
     );
 
-    debugPrint('content: $prediction');
-    debugPrint('total predictions: ${prediction!.length}');
-
     return prediction;
   }
 }
