@@ -15,6 +15,8 @@ class CountPage extends HookConsumerWidget {
     Size size = MediaQuery.of(context).size;
     final pickedImageState = ref.watch(pickedImageProvider);
     final imageSize = ref.read(pickedImageProvider.notifier).getImageSize();
+    final double screenWidth = size.width;
+
     final displayRecognitionsState =
         ref.watch(displayRecognitionProvider(size));
     final ImagePicker _picker = ImagePicker();
@@ -32,6 +34,10 @@ class CountPage extends HookConsumerWidget {
               ),
             );
           }
+          final double adjustedAspectRatio =
+              imageSize.height / imageSize.width * screenWidth;
+          final imageWidthScale = screenWidth / imageSize.width;
+          final imageHeightScale = adjustedAspectRatio / imageSize.height;
           List<Widget> stackChildren = [];
           stackChildren.add(
             Positioned(
@@ -41,13 +47,11 @@ class CountPage extends HookConsumerWidget {
               child: Image.file(pickedImageState),
             ),
           );
-          double factorX = size.width;
-          double factorY = imageSize.height / imageSize.width * size.width;
           stackChildren.addAll(displayRecognitions.map(
             (displayRecognition) {
               return RectanglesContainers(
-                factorX: factorX,
-                factorY: factorY,
+                imageWidthScale: imageWidthScale,
+                imageHeightScale: imageHeightScale,
                 recognition: displayRecognition,
               );
             },

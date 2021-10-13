@@ -113,6 +113,11 @@ public class MainActivity extends FlutterActivity {
         bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, inputWidth, inputHeight, true);
 
+        mImgScaleX = (float)bitmap.getWidth() / inputWidth;
+        mImgScaleY = (float)bitmap.getHeight() / inputHeight;
+        Log.i("flutter_d2go", Integer.toString(bitmap.getWidth()));
+        Log.i("flutter_d2go", Integer.toString(bitmap.getHeight()));
+
         final FloatBuffer floatBuffer = Tensor.allocateFloatBuffer(3 * resizedBitmap.getWidth() * resizedBitmap.getHeight());
         TensorImageUtils.bitmapToFloatBuffer(resizedBitmap,0,0, resizedBitmap.getWidth(), resizedBitmap.getHeight(), mean, std, floatBuffer, 0);
         final Tensor inputTensor = Tensor.fromBlob(floatBuffer, new long[] {3, resizedBitmap.getHeight(), resizedBitmap.getWidth()});
@@ -146,10 +151,10 @@ public class MainActivity extends FlutterActivity {
                     continue;
                 Map<String, Object> output = new LinkedHashMap<String, Object>();
                 Map<String, Float> rect = new LinkedHashMap<String, Float>();
-                rect.put("left", boxesData[4 * i + 0]);
-                rect.put("top", boxesData[4 * i + 1]);
-                rect.put("right", boxesData[4 * i + 2]);
-                rect.put("bottom", boxesData[4 * i + 3]);
+                rect.put("left", boxesData[4 * i + 0] * mImgScaleX);
+                rect.put("top", boxesData[4 * i + 1] * mImgScaleY);
+                rect.put("right", boxesData[4 * i + 2] * mImgScaleX);
+                rect.put("bottom", boxesData[4 * i + 3] * mImgScaleY);
 
                 output.put("rect", rect);
                 output.put("confidenceInClass", scoresData[i]);

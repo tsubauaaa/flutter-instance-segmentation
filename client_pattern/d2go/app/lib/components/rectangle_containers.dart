@@ -4,22 +4,26 @@ import 'package:flutter/material.dart';
 class RectanglesContainers extends StatelessWidget {
   const RectanglesContainers({
     Key? key,
-    required this.factorX,
-    required this.factorY,
     required this.recognition,
+    required this.imageWidthScale,
+    required this.imageHeightScale,
   }) : super(key: key);
 
-  final double factorX;
-  final double factorY;
   final RecognitionModel recognition;
+  final double imageWidthScale;
+  final double imageHeightScale;
 
   @override
   Widget build(BuildContext context) {
+    final left = recognition.rect.left * imageWidthScale;
+    final top = recognition.rect.top * imageHeightScale;
+    final right = recognition.rect.right * imageWidthScale;
+    final bottom = recognition.rect.bottom * imageHeightScale;
     return Positioned(
-      left: recognition.rect.x * factorX,
-      top: recognition.rect.y * factorY,
-      width: recognition.rect.w * factorX,
-      height: recognition.rect.h * factorY,
+      left: left,
+      top: top,
+      width: right - left,
+      height: bottom - top,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(8.0)),

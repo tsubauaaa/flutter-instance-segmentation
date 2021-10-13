@@ -6,9 +6,9 @@ class RecognitionModel {
 }
 
 class Rectangle {
-  Rectangle(this.w, this.x, this.h, this.y);
-  double w;
-  double x;
-  double h;
-  double y;
+  Rectangle(this.left, this.top, this.right, this.bottom);
+  double left;
+  double top;
+  double right;
+  double bottom;
 }

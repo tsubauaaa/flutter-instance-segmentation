@@ -25,7 +25,8 @@ final displayRecognitionProvider =
     for (RecognitionModel target in recognitions) {
       List<RecognitionModel> group = [];
       for (RecognitionModel comparison in recognitions) {
-        var diff = ((target.rect.y - comparison.rect.y) * factorY).abs();
+        var diff =
+            ((target.rect.bottom - comparison.rect.bottom) * factorY).abs();
         if (target.rect != comparison.rect && diff <= 2.0) {
           group.add(target);
           group.add(comparison);
@@ -37,7 +38,7 @@ final displayRecognitionProvider =
       }
       // Eliminate duplicates within group, then sort group by rectangle y
       group = group.toSet().toList();
-      group.sort((a, b) => a.rect.y.compareTo(b.rect.y));
+      group.sort((a, b) => a.rect.bottom.compareTo(b.rect.bottom));
 
       duplicateGroups.add(group);
     }
