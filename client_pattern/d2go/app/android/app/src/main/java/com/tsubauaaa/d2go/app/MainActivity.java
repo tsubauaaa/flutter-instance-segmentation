@@ -4,6 +4,9 @@ import android.util.Log;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -85,6 +88,7 @@ public class MainActivity extends FlutterActivity {
         double minScore = 0.0;
         int inputWidth = 640;
         int inputHeight = 640;
+        float mImgScaleX, mImgScaleY, mIvScaleX, mIvScaleY, mStartX, mStartY;
 
 
         int index = call.argument("index");
@@ -134,18 +138,31 @@ public class MainActivity extends FlutterActivity {
             final int totalInstances = scoresData.length;
 
             // 全インスタンス数 x outputカラム(left, top, right, bottom, score, label)
-            float[] outputs = new float[totalInstances * 6];
-            int count = 0;
+            List<Map<String, Object>> outputs = new ArrayList<Map<String, Object>>();
+//            float[] outputs = new float[totalInstances * 6];
+//            int count = 0;
             for (int i = 0; i < totalInstances; i++) {
                 if (scoresData[i] < minScore)
                     continue;
-                outputs[6 * count + 0] = boxesData[4 * i + 0]; // left
-                outputs[6 * count + 1] = boxesData[4 * i + 1]; // top
-                outputs[6 * count + 2] = boxesData[4 * i + 2]; // right
-                outputs[6 * count + 3] = boxesData[4 * i + 3]; // bottom
-                outputs[6 * count + 4] = scoresData[i]; // score
-                outputs[6 * count + 5] = labelsData[i] - 1; // label
-                count++;
+                Map<String, Object> output = new LinkedHashMap<String, Object>();
+                Map<String, Float> rect = new LinkedHashMap<String, Float>();
+                rect.put("left", boxesData[4 * i + 0]);
+                rect.put("top", boxesData[4 * i + 1]);
+                rect.put("right", boxesData[4 * i + 2]);
+                rect.put("bottom", boxesData[4 * i + 3]);
+
+                output.put("rect", rect);
+                output.put("confidenceInClass", scoresData[i]);
+                output.put("detectedClass", labelsData[i] - 1);
+
+                outputs.add(output);
+//                outputs[6 * count + 0] = boxesData[4 * i + 0]; // left
+//                outputs[6 * count + 1] = boxesData[4 * i + 1]; // top
+//                outputs[6 * count + 2] = boxesData[4 * i + 2]; // right
+//                outputs[6 * count + 3] = boxesData[4 * i + 3]; // bottom
+//                outputs[6 * count + 4] = scoresData[i]; // score
+//                outputs[6 * count + 5] = labelsData[i] - 1; // label
+//                count++;
             }
             result.success(outputs);
         }

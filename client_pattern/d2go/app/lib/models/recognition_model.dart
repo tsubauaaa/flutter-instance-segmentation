@@ -2,7 +2,7 @@ class RecognitionModel {
   RecognitionModel(this.rect, this.confidenceInClass, this.detectedClass);
   Rectangle rect;
   double confidenceInClass;
-  String detectedClass;
+  int detectedClass;
 }
 
 class Rectangle {

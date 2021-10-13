@@ -25,12 +25,12 @@ class D2GoModel {
   /// 推論対象の画像[image], その縦横長[width]/[height],
   /// Normalizeに使う平均値[mean]、標準偏差[std],
   /// 推論結果から除外するためのしきい値[minScore]となる
-  Future<List> getPredictionD2Go({required File image}) async {
+  Future<List?> getPredictionD2Go({required File image}) async {
     // Segmentation Label
     final List<String> labels = ['book'];
 
     // 推論
-    final List<double> prediction = await _channel.invokeMethod(
+    final List? prediction = await _channel.invokeMethod(
       'd2go',
       {
         'index': _index,
@@ -44,12 +44,8 @@ class D2GoModel {
     );
 
     debugPrint('content: $prediction');
-    debugPrint('total predictions: ${prediction.length ~/ 6}');
+    debugPrint('total predictions: ${prediction!.length}');
 
-    // for (int i = 0; i < prediction!.length; i++) {
-    //   int index = prediction[i][5].toInt();
-    //   prediction[i][5] = labels[index];
-    // }
     return prediction;
   }
 }

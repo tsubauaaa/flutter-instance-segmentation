@@ -25,31 +25,22 @@ class D2GoService {
 
     var recognitionList = await _d2Model!.getPredictionD2Go(image: image);
 
-    final recognitions = [RecognitionModel(Rectangle(1, 1, 2, 2), 0.9, 'book')];
+    if (recognitionList != null && recognitionList.isNotEmpty) {
+      recognitions = recognitionList
+          .map(
+            (e) => RecognitionModel(
+                Rectangle(
+                  e['rect']['left'],
+                  e['rect']['top'],
+                  e['rect']['right'],
+                  e['rect']['bottom'],
+                ),
+                e['confidenceInClass'],
+                e['detectedClass']),
+          )
+          .toList();
+    }
 
-    // var recognitionList = await Tflite.detectObjectOnImage(
-    //   path: image.path,
-    //   model: "YOLO",
-    //   imageMean: 0.0,
-    //   imageStd: 255.0,
-    //   numResultsPerClass: 100,
-    // );
-    // if (recognitionList != null && recognitionList.isNotEmpty) {
-    //   recognitions = recognitionList
-    //       .map(
-    //         (e) => RecognitionModel(
-    //             Rectangle(
-    //               e['rect']['w'],
-    //               e['rect']['x'],
-    //               e['rect']['h'],
-    //               e['rect']['y'],
-    //             ),
-    //             e['confidenceInClass'],
-    //             e['detectedClass']),
-    //       )
-    //       .toList();
-    // }
-    //
     int endTime = DateTime.now().millisecondsSinceEpoch;
     debugPrint("Inference took ${endTime - startTime}ms");
     if (recognitions == null) return null;
