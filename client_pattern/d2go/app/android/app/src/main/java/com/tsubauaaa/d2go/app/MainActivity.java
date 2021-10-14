@@ -2,6 +2,9 @@ package com.tsubauaaa.d2go.app;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +31,7 @@ public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "flutter_d2go";
 
     ArrayList<Module> modules = new ArrayList<>();
+    List<String> classes = new ArrayList<>();
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -54,18 +58,31 @@ public class MainActivity extends FlutterActivity {
     /**
      * <p>d2goモデルを読み込んで、[modules]にorg.pytorch.Moduleを追加し、そのindexを返却する</>
      *
-     * @param call absPath org.pytorch.Moduleのloadメソッドが読み込むD2Goモデル(d2go.pt)のxxxパス,
-     *             assetPath モデルの読み込み失敗時に、ログ表示するために使うD2Goモデル(d2go.pt)の相対パス
+     * @param call absModelPath org.pytorch.Moduleのloadメソッドが読み込むD2Goモデルのパス,
+     *             assetModelPath モデルの読み込み失敗時に、ログ表示するために使うD2GoモデルのFlutterのassetパス
+     *             absLabelPath ラベルが書かれているファイルのパス
+     *             assetLabelPath ラベルの読み込み失敗時に、ログ表示するために使うD2GoモデルのFlutterのassetパス
      * @param result 成功した場合は、ArrayList<org.pytorch.Module>のindexをresult.successで返却する
      */
     private void loadModel(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         try {
-            String absPath = call.argument("absPath");
-            modules.add(Module.load(absPath));
+            classes.clear();
+            String absModelPath = call.argument("absModelPath");
+            modules.add(Module.load(absModelPath));
+
+            String absLabelPath = call.argument("absLabelPath");
+            File labels = new File(absLabelPath);
+            BufferedReader br = new BufferedReader(new FileReader(labels));
+            String line;
+            while ((line = br.readLine()) != null) {
+                classes.add(line);
+            }
+
             result.success(modules.size() - 1);
         } catch (Exception e) {
-            String assetPath = call.argument("assetPath");
-            Log.e("flutter_d2go", assetPath + "is not a proper model", e);
+            String assetModelPath = call.argument("assetModelPath");
+            String assetLabelPath = call.argument("assetLabelPath");
+            Log.e("flutter_d2go", assetModelPath + "or " + assetLabelPath + "are not a proper model or label", e);
         }
     }
 
@@ -81,7 +98,7 @@ public class MainActivity extends FlutterActivity {
      *             [minScore] しきい値
      * @param result 成功した場合は、[outputs]をresult.successで返却する,
      *               [outputs]は{ "rect": { "left": Float, "top": Float, "right": Float, "bottom": Float },
-     *               "confidenceInClass": Float, "detectedClass": Long }のList
+     *               "confidenceInClass": Float, "detectedClass": String }のList
      */
     private void d2go(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
         Module module;
@@ -157,7 +174,7 @@ public class MainActivity extends FlutterActivity {
 
                 output.put("rect", rect);
                 output.put("confidenceInClass", scoresData[i]);
-                output.put("detectedClass", labelsData[i] - 1);
+                output.put("detectedClass", classes.get((int)(labelsData[i] - 1)));
 
                 outputs.add(output);
             }

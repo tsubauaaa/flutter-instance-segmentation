@@ -10,14 +10,19 @@ class FlutterD2Go {
 
   static const MethodChannel _channel = MethodChannel('flutter_d2go');
 
-  /// D2Goモデル(d2go.pt)の相対パス[path]を受けて、org.pytorch.Moduleのloadメソッド
+  /// D2Goモデル(d2go.pt)の相対パス[modelPath]を受けて、org.pytorch.Moduleのloadメソッド
   /// が読み込むためのパス形式の[absPath]を作成する
   /// invokeMethodでloadModelを呼び出し、D2GoModelクラスインスタンス[D2GoModel(index)]
   /// を取得、それを返却するメソッド
-  static Future<D2GoModel> loadModel(String path) async {
-    String absPath = await _getAbsolutePath(path);
-    int index = await _channel
-        .invokeMethod('loadModel', {'absPath': absPath, 'assetPath': path});
+  static Future<D2GoModel> loadModel(String modelPath, String labelPath) async {
+    String absModelPath = await _getAbsolutePath(modelPath);
+    String absLabelPath = await _getAbsolutePath(labelPath);
+    int index = await _channel.invokeMethod('loadModel', {
+      'absModelPath': absModelPath,
+      'absLabelPath': absLabelPath,
+      'assetModelPath': modelPath,
+      'assetLabelPath': labelPath,
+    });
     return D2GoModel(index);
   }
 

@@ -14,9 +14,11 @@ class D2GoService {
   D2GoModel? _d2Model;
 
   Future<List<RecognitionModel>?> classifyImage(File image) async {
-    String pathD2Model = 'assets/models/d2go.pt';
+    String modelPath = 'assets/models/d2go.pt';
+    String labelPath = 'assets/models/classes.txt';
+
     try {
-      _d2Model = await FlutterD2Go.loadModel(pathD2Model);
+      _d2Model = await FlutterD2Go.loadModel(modelPath, labelPath);
     } on PlatformException {
       debugPrint('only supported for android and ios so far');
     }
