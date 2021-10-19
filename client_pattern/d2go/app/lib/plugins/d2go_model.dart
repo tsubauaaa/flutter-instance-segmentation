@@ -1,13 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 const kTorchvisionNormMeanRGB = [0.0, 0.0, 0.0];
 const kTorchvisionNormStdRGB = [1.0, 1.0, 1.0];
 const kInputWidth = 640;
 const kInputHeight = 640;
-const kMinScore = 0.4;
+const kMinScore = 0.7;
 
 /// D2Goを使った推論を行うクラス
 ///
