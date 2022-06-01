@@ -79,10 +79,10 @@ class CountPage extends HookConsumerWidget {
             ),
           );
         },
-        loading: (prev) => const Center(
+        loading: () => const Center(
           child: CircularProgressIndicator(),
         ),
-        error: (err, stack, prev) => Center(
+        error: (err, stack) => Center(
           child: Text(err.toString()),
         ),
       ),
